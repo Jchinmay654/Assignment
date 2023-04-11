@@ -1,33 +1,32 @@
+name: Molecule Test
 
-name: Build and Deploy
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - Jchinmay654
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  molecule_test:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    strategy:
+      matrix:
+        platform: ['centos7', 'debian10']
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+      - name: Checkout Code 
+        uses: actions/checkout@v2
 
-      # By default login to container registry
-      - name: Login to the container registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip3 install molecule[docker] ansible
+          sudo systemctl start docker
+          ansible-galaxy collection install community.docker
+          ansible-galaxy collection install ansible.posix
+      - name: Molecule Test
+        run: |
+          cd ansible-role
+          molecule test
+        env: 
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
