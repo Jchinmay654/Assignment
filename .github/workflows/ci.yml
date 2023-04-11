@@ -3,7 +3,7 @@ name: Molecule Test
 on:
   push:
     branches:
-      - Jchinmay654
+      - githubaction
 
 jobs:
   molecule_test:
