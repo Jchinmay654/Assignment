@@ -1,78 +1,23 @@
-name: Molecule Test
+name: Molecule
 
 on:
-  workflow_dispatch:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
+      - fix/RAD-614
+  pull_request_target:
+    types:
+      - opened
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-  molecule_test:
+  molecule:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: ['centos7', 'debian10']
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          pip3 install molecule[docker] ansible
-          sudo systemctl start docker
-          ansible-galaxy collection install community.docker
-          ansible-galaxy collection install ansible.posix
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'  
-          
-# I have confirmed this action and its working file with the desired directory. (Success)
-      - name: molecule Test
-        run: |
-          cd terraform-install
-          molecule test
-          
-# (Try 1)-In this try problem is that we have to give input for variable
-      
-      - name: molecule Test
-        run: |
-          cd ${{ github.workspace }}/${{ github.event.pull_request.head.repo.name }}/${{ inputs.directory-path }}
-          molecule test
-          
-#  (Try 2)-In this i tried something like this 
-      - name: molecule Test
-        run: |
-          cd ${{ github.workspace }}
-          role_directory=$(find . -name ${{ inputs.role-directory-path }} | grep -v .git | head -n 1)
-          cd $role_directory
-          molecule test
-          
-# (Try 3)-IN this i tried something like go to the role and find meta dir if meta if present then run molecule test.
-# But in this we cannot use this approach and with cannot we used with run.
-      - name: Run Molecule Test
-        if: github.event_name == 'pull_request'
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'
-        run: |
-          cd ${{ github.workspace }}/${{ github.event.pull_request.head.repo.name }}/${{ github.event.pull_request.head.ref }}
-          molecule test
+      - uses: actions/checkout@v2
         with:
-          directory-path: meta
-          
-#  (Try 4)-For arbitary directory some of these methords not working  in this block it is skiping molecule test part.         
-      - name: Run Molecule Test
-        if: github.event_name == 'pull_request'
-        run: |
-          cd ${{ github.workspace }}/${{ github.event.pull_request.head.repo.name }}
-          for dir in ${{ inputs.directory-path }}/* ; do
-            if [ -d "${dir}" ]; then
-              cd "${dir}" && molecule test
-            fi
-          done
-# Apart from this i tried several methords but none of them working 
+          path: "${{ github.repository }}"
+      - name: Molecule
+        uses: monolithprojects/action-molecule@v1.4.1
